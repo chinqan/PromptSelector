@@ -3,82 +3,101 @@ import glob
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
-# 1. 讀取顏色專用函式
-def load_colors():
-    color_file = os.path.join(current_dir, "color.txt")
-    colors = []
-    if os.path.exists(color_file):
-        with open(color_file, "r", encoding="utf-8") as f:
+# 1. 通用的檔案讀取函式
+def load_items(file_path):
+    items = []
+    if os.path.exists(file_path):
+        with open(file_path, "r", encoding="utf-8") as f:
             for line in f:
                 item = line.strip()
-                if item: colors.append(item)
-    return colors if colors else ["找不到 color.txt"]
+                if item:
+                    items.append(item)
+    return items if items else ["(檔案為空)"]
 
-# 2. 讀取所有物品檔案的函式
-def load_items():
-    # 抓取資料夾內所有 txt，但排除 color.txt
-    txt_files = [f for f in glob.glob(os.path.join(current_dir, "*.txt")) if not f.endswith("color.txt")]
+# 準備要註冊給 ComfyUI 的清單
+NODE_CLASS_MAPPINGS = {}
+NODE_DISPLAY_NAME_MAPPINGS = {}
+
+# ==========================================
+# 2. 獨立建立【顏色選擇器】節點
+# ==========================================
+color_file = os.path.join(current_dir, "color.txt")
+class ColorSelector:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {"selected_color": (load_items(color_file), )}}
     
-    display_list = []
-    item_map = {}
+    RETURN_TYPES = ("STRING", "INT")
+    RETURN_NAMES = ("顏色字串", "顏色編號")
+    FUNCTION = "get_selection"
+    CATEGORY = "MyCustomNodes/Selectors"
+
+    def get_selection(self, selected_color):
+        lst = load_items(color_file)
+        index = lst.index(selected_color) if selected_color in lst else 0
+        return (selected_color, index)
+
+NODE_CLASS_MAPPINGS["MyColorSelector"] = ColorSelector
+NODE_DISPLAY_NAME_MAPPINGS["MyColorSelector"] = "🎨 顏色選擇器 (Color)"
+
+
+# ==========================================
+# 3. 動態工廠：為每一個 item*.txt 自動生成專屬節點
+# ==========================================
+# 自動抓取資料夾內所有開頭是 item 且結尾是 .txt 的檔案 (例如 item1.txt, item2.txt)
+item_files = glob.glob(os.path.join(current_dir, "item*.txt"))
+
+def create_item_node(file_path, filename_no_ext):
+    class DynamicItemSelector:
+        @classmethod
+        def INPUT_TYPES(s):
+            # 每個節點只載入自己專屬檔案的內容
+            return {"required": {"selected_item": (load_items(file_path), )}}
+        
+        RETURN_TYPES = ("STRING", "INT")
+        RETURN_NAMES = ("物品字串", "物品編號")
+        FUNCTION = "get_selection"
+        CATEGORY = "MyCustomNodes/Items"
+
+        def get_selection(self, selected_item):
+            lst = load_items(file_path)
+            index = lst.index(selected_item) if selected_item in lst else 0
+            return (selected_item, index)
+            
+    return DynamicItemSelector
+
+# 迴圈掃描所有檔案，並逐一註冊成新節點
+for f_path in item_files:
+    f_name = os.path.splitext(os.path.basename(f_path))[0] # 取得檔名(如 item1)
     
-    for file_path in txt_files:
-        # 取得檔名 (不含 .txt，例如從 item1.txt 取得 item1)
-        filename = os.path.splitext(os.path.basename(file_path))[0]
-        
-        with open(file_path, "r", encoding="utf-8") as f:
-            lines = f.readlines()
-            for index, line in enumerate(lines):
-                real_item = line.strip()
-                if real_item:
-                    # 組合選單上的顯示文字，例如 "[item1] 寶劍"
-                    display_text = f"[{filename}] {real_item}"
-                    display_list.append(display_text)
-                    
-                    # 字典記錄：顯示文字對應 -> (真實字串, 檔案內編號)
-                    item_map[display_text] = (real_item, index)
-                    
-    if not display_list:
-        display_list = ["找不到任何物品 txt 檔"]
-        item_map["找不到任何物品 txt 檔"] = ("無", 0)
-        
-    return display_list, item_map
+    node_class = create_item_node(f_path, f_name)
+    class_id = f"DynamicSelector_{f_name}"
+    
+    NODE_CLASS_MAPPINGS[class_id] = node_class
+    NODE_DISPLAY_NAME_MAPPINGS[class_id] = f"📦 物品選擇器 ({f_name})"
 
-# 在啟動時載入資料
-COLOR_LIST = load_colors()
-ITEM_DISPLAY_LIST, ITEM_MAP = load_items()
 
-class GameAssetSelector:
+# ==========================================
+# 4. 輔助節點：幫你把顏色跟物品組合成一句話
+# ==========================================
+class CombineColorAndItem:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                "selected_color": (COLOR_LIST, ),
-                "selected_item": (ITEM_DISPLAY_LIST, ),
+                "color_string": ("STRING", {"forceInput": True}),
+                "item_string": ("STRING", {"forceInput": True}),
             }
         }
-    
-    # 定義 5 個輸出
-    RETURN_TYPES = ("STRING", "INT", "STRING", "INT", "STRING")
-    RETURN_NAMES = ("顏色字串", "顏色編號", "物品字串", "物品編號", "最終組合Prompt")
-    FUNCTION = "get_selection"
-    CATEGORY = "MyCustomNodes/Data"
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("最終組合 Prompt",)
+    FUNCTION = "combine"
+    CATEGORY = "MyCustomNodes/Selectors"
 
-    def get_selection(self, selected_color, selected_item):
-        color_index = COLOR_LIST.index(selected_color)
-        
-        # 透過字典，解開選單文字，還原成真實物品與編號
-        real_item, item_index = ITEM_MAP.get(selected_item, ("無", 0))
-        
-        # 組合字串，直接生成 "紅色的寶劍"
-        combined_prompt = f"{selected_color}的{real_item}"
-        
-        return (selected_color, color_index, real_item, item_index, combined_prompt)
+    def combine(self, color_string, item_string):
+        return (f"{color_string}的{item_string}", )
 
-NODE_CLASS_MAPPINGS = {
-    "GameAssetSelector": GameAssetSelector
-}
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "GameAssetSelector": "遊戲素材 顏色與物品選擇器"
-}
+NODE_CLASS_MAPPINGS["CombineColorAndItem"] = CombineColorAndItem
+NODE_DISPLAY_NAME_MAPPINGS["CombineColorAndItem"] = "🔗 組合顏色與物品"
+
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
