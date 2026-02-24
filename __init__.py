@@ -18,7 +18,7 @@ NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
 # ==========================================
-# 2. 顏色選擇器 (獨立放到 Color 分類)
+# 2. 顏色選擇器
 # ==========================================
 class ColorSelector:
     @classmethod
@@ -40,7 +40,7 @@ NODE_DISPLAY_NAME_MAPPINGS["MyColorSelector"] = "🎨 顏色選擇器 (Color)"
 
 
 # ==========================================
-# 3. 髮型選擇器 (加入下拉選單 + 連線覆寫機制)
+# 3. 髮型選擇器 (加入連線覆寫邏輯)
 # ==========================================
 class HairSelector:
     @classmethod
@@ -48,14 +48,14 @@ class HairSelector:
         return {
             "required": {
                 "selected_hair": (load_items("hair.txt"), ),
-                # 恢復主副色的下拉選單
-                "hair_color_main_dropdown": (load_items("color.txt"), ), 
-                "hair_color_sub_dropdown": (load_items("color.txt"), ),
+                # 這是畫面上的下拉選單
+                "color_main_dropdown": (load_items("color.txt"), ), 
+                "color_sub_dropdown": (load_items("color.txt"), ),
             },
             "optional": {
-                # 新增主副色的連線覆寫端點
-                "hair_color_main_override": ("STRING", {"forceInput": True}),
-                "hair_color_sub_override": ("STRING", {"forceInput": True}),
+                # 這是畫面左側的連線端點 (名字精簡為 color_main / color_sub)
+                "color_main": ("STRING", {"forceInput": True}),
+                "color_sub": ("STRING", {"forceInput": True}),
             }
         }
     
@@ -64,26 +64,15 @@ class HairSelector:
     FUNCTION = "get_selection"
     CATEGORY = "MyCustomNodes/Character_Outfit"
 
-    # 注意這裡接收了 override 變數，並給預設值 None
-    def get_selection(self, selected_hair, hair_color_main_dropdown, hair_color_sub_dropdown, hair_color_main_override=None, hair_color_sub_override=None):
+    def get_selection(self, selected_hair, color_main_dropdown, color_sub_dropdown, color_main=None, color_sub=None):
         lst = load_items("hair.txt")
         index = lst.index(selected_hair) if selected_hair in lst else 0
         
-        # 主色判斷：有連線用連線，沒連線用選單
-        if hair_color_main_override and isinstance(hair_color_main_override, str) and hair_color_main_override.strip() != "":
-            final_main = hair_color_main_override
-        else:
-            final_main = hair_color_main_dropdown
+        # 覆寫邏輯：如果左側 color_main 有接線，選單直接失效！
+        final_main = color_main if (color_main and isinstance(color_main, str) and color_main.strip()) else color_main_dropdown
+        final_sub = color_sub if (color_sub and isinstance(color_sub, str) and color_sub.strip()) else color_sub_dropdown
 
-        # 副色判斷：有連線用連線，沒連線用選單
-        if hair_color_sub_override and isinstance(hair_color_sub_override, str) and hair_color_sub_override.strip() != "":
-            final_sub = hair_color_sub_override
-        else:
-            final_sub = hair_color_sub_dropdown
-
-        # 加上「留著」作為前綴，並使用最終決定的顏色
         combined_prompt = f"留著主色{final_main}與副色{final_sub}的{selected_hair}"
-        
         return (selected_hair, index, final_main, final_sub, combined_prompt)
 
 NODE_CLASS_MAPPINGS["MyHairSelector"] = HairSelector
@@ -91,7 +80,7 @@ NODE_DISPLAY_NAME_MAPPINGS["MyHairSelector"] = "💇‍♀️ 髮型特化選擇
 
 
 # ==========================================
-# 4. 其他部位選擇器 (加入下拉選單 + 連線覆寫機制)
+# 4. 其他部位選擇器 (加入連線覆寫邏輯)
 # ==========================================
 FILE_MAPPINGS = {
     "accessories.txt": ("AccessoriesSelector", "💍 飾品選擇器 (Accessories)", "配戴著"),
@@ -110,12 +99,12 @@ def create_selector_class(file_name, prefix_text):
             return {
                 "required": {
                     "selected_item": (load_items(file_name), ),
-                    # 恢復顏色的下拉選單
+                    # 下拉選單
                     "color_dropdown": (load_items("color.txt"), ), 
                 },
                 "optional": {
-                    # 新增顏色的連線覆寫端點
-                    "color_input_override": ("STRING", {"forceInput": True}),
+                    # 左側連線端點，名字精簡為 color
+                    "color": ("STRING", {"forceInput": True}),
                 }
             }
         
@@ -124,19 +113,14 @@ def create_selector_class(file_name, prefix_text):
         FUNCTION = "get_selection"
         CATEGORY = "MyCustomNodes/Character_Outfit"
 
-        def get_selection(self, selected_item, color_dropdown, color_input_override=None):
+        def get_selection(self, selected_item, color_dropdown, color=None):
             lst = load_items(file_name)
             index = lst.index(selected_item) if selected_item in lst else 0
             
-            # 判斷邏輯：有連線用連線，沒連線用選單
-            if color_input_override and isinstance(color_input_override, str) and color_input_override.strip() != "":
-                final_color = color_input_override
-            else:
-                final_color = color_dropdown
+            # 覆寫邏輯：如果左側 color 有接線，選單直接失效！
+            final_color = color if (color and isinstance(color, str) and color.strip()) else color_dropdown
             
-            # 自動組合：前綴詞 + 最終顏色 + 的 + 物品
             combined_prompt = f"{prefix_text}{final_color}的{selected_item}"
-            
             return (selected_item, index, final_color, combined_prompt)
             
     return DynamicSelectorNode
@@ -148,7 +132,7 @@ for file_name, (class_name, display_name, prefix_text) in FILE_MAPPINGS.items():
 
 
 # ==========================================
-# 5. 終極服裝 Prompt 融合器 (支援選填 Optional)
+# 5. 終極服裝 Prompt 融合器
 # ==========================================
 class OutfitPromptBuilder:
     @classmethod
@@ -172,7 +156,7 @@ class OutfitPromptBuilder:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("最終完整 Prompt",)
     FUNCTION = "build_prompt"
-    CATEGORY = "MyCustomNodes/ Final"
+    CATEGORY = "MyCustomNodes/Final"
 
     def build_prompt(self, base_prompt, hair="", tops="", bottoms="", shoes="", accessories="", bags="", neckwear="", wrist=""):
         parts = [base_prompt, hair, tops, bottoms, shoes, accessories, bags, neckwear, wrist]
