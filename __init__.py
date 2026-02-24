@@ -169,4 +169,6 @@ NODE_DISPLAY_NAME_MAPPINGS["MyOutfitPromptBuilder"] = "🧩 終極服裝 Prompt 
 
 # 告訴 ComfyUI 去載入我們寫好的網頁前端 JS 腳本
 WEB_DIRECTORY = "./web"
-__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
+
+# 【關鍵修正】：必須把 WEB_DIRECTORY 也加進導出清單中，ComfyUI 才會看得到它！
+__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS', 'WEB_DIRECTORY']
