@@ -10,9 +10,6 @@ app.registerExtension({
         ];
 
         if (targetNodes.includes(node.comfyClass)) {
-            // 偵錯日誌 1：確認腳本有綁定到節點上
-            console.log(`[MyCustomNodes] 成功掛載動態隱藏功能到節點: ${node.comfyClass}`);
-
             const onConnectionsChange = node.onConnectionsChange;
             node.onConnectionsChange = function(type, index, connected, link_info) {
                 if (onConnectionsChange) {
@@ -31,26 +28,26 @@ app.registerExtension({
                     if (targetWidgetName) {
                         const widget = this.widgets?.find(w => w.name === targetWidgetName);
                         if (widget) {
-                            // 偵錯日誌 2：確認連線動作有被觸發
-                            console.log(`[MyCustomNodes] 偵測到連線變化: ${input.name} -> ${connected ? "接上" : "拔除"}`);
-                            
                             if (connected) {
-                                if (widget.type !== "hidden") {
+                                // 【關鍵修復】：使用 ComfyUI 原生的隱藏標籤 "converted-widget"
+                                if (widget.type !== "converted-widget") {
                                     widget.origType = widget.type;
-                                    widget.origComputeSize = widget.computeSize;
-                                    widget.type = "hidden";
-                                    widget.computeSize = () => [0, -4]; 
+                                    widget.type = "converted-widget"; 
+                                    widget.computeSize = () => [0, -4]; // 消除佔用的高度
                                 }
                             } else {
-                                if (widget.type === "hidden") {
+                                // 恢復原狀
+                                if (widget.type === "converted-widget") {
                                     widget.type = widget.origType || "combo";
-                                    widget.computeSize = widget.origComputeSize;
+                                    delete widget.computeSize;
                                 }
                             }
                             
-                            // 【關鍵修復】：強制節點重新計算自己的高度，這樣選單才會真的縮回去！
-                            this.setSize(this.computeSize());
-                            app.graph.setDirtyCanvas(true, true);
+                            // 【關鍵修復】：加入 10 毫秒的微小延遲，確保 LiteGraph 畫布更新完畢後再縮放節點
+                            setTimeout(() => {
+                                this.setSize(this.computeSize());
+                                app.graph.setDirtyCanvas(true, true);
+                            }, 10);
                         }
                     }
                 }
