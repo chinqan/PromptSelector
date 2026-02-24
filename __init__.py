@@ -40,17 +40,14 @@ NODE_DISPLAY_NAME_MAPPINGS["MyColorSelector"] = "🎨 顏色選擇器 (Color)"
 
 
 # ==========================================
-# 3. 髮型選擇器 (強制顏色變為連線輸入端點)
+# 3. 髮型選擇器 (保留雙顏色輸入的特化版)
 # ==========================================
 class HairSelector:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                # 髮型本身保留下拉選單
                 "selected_hair": (load_items("hair.txt"), ),
-                
-                # 顏色部分改為 STRING 型態，並加上 "forceInput": True 強制變成連線端點
                 "hair_color_main": ("STRING", {"forceInput": True}), 
                 "hair_color_sub": ("STRING", {"forceInput": True}),
             }
@@ -74,7 +71,7 @@ NODE_DISPLAY_NAME_MAPPINGS["MyHairSelector"] = "💇‍♀️ 髮型特化選擇
 
 
 # ==========================================
-# 4. 其他部位選擇器 (批次建立)
+# 4. 其他部位選擇器 (全面升級：加上 color 輸入連線)
 # ==========================================
 FILE_MAPPINGS = {
     "accessories.txt": ("AccessoriesSelector", "💍 飾品選擇器 (Accessories)"),
@@ -90,17 +87,28 @@ def create_selector_class(file_name):
     class DynamicSelectorNode:
         @classmethod
         def INPUT_TYPES(s):
-            return {"required": {"selected_item": (load_items(file_name), )}}
+            return {
+                "required": {
+                    "selected_item": (load_items(file_name), ),
+                    # 新增：強制顏色變為連線輸入端點
+                    "color": ("STRING", {"forceInput": True}), 
+                }
+            }
         
-        RETURN_TYPES = ("STRING", "INT")
-        RETURN_NAMES = ("物品字串", "物品編號")
+        # 新增：輸出端點也幫你加上顏色，以及組裝好的 Prompt
+        RETURN_TYPES = ("STRING", "INT", "STRING", "STRING")
+        RETURN_NAMES = ("物品字串", "物品編號", "顏色字串", "最終組合Prompt")
         FUNCTION = "get_selection"
         CATEGORY = "MyCustomNodes/Character_Outfit"
 
-        def get_selection(self, selected_item):
+        def get_selection(self, selected_item, color):
             lst = load_items(file_name)
             index = lst.index(selected_item) if selected_item in lst else 0
-            return (selected_item, index)
+            
+            # 自動組合：例如 "紅色的皮鞋"
+            combined_prompt = f"{color}的{selected_item}"
+            
+            return (selected_item, index, color, combined_prompt)
             
     return DynamicSelectorNode
 
