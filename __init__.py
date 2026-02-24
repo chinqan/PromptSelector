@@ -12,42 +12,90 @@ def load_items(file_name):
                 item = line.strip()
                 if item:
                     items.append(item)
-    # 防呆：如果檔案不存在或沒內容，顯示提示
     return items if items else [f"(找不到 {file_name} 或為空)"]
 
 NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
 # ==========================================
-# 2. 定義你的 8 個檔案清單與專屬的節點名稱
-# 格式： "檔案名稱": ("內部類別名稱", "畫面上顯示的名稱")
+# 2. 顏色選擇器 (獨立放到 Color 分類)
+# ==========================================
+class ColorSelector:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {"selected_color": (load_items("color.txt"), )}}
+    
+    RETURN_TYPES = ("STRING", "INT")
+    RETURN_NAMES = ("顏色字串", "顏色編號")
+    FUNCTION = "get_selection"
+    CATEGORY = "MyCustomNodes/Color" # 獨立分類
+
+    def get_selection(self, selected_color):
+        lst = load_items("color.txt")
+        index = lst.index(selected_color) if selected_color in lst else 0
+        return (selected_color, index)
+
+NODE_CLASS_MAPPINGS["MyColorSelector"] = ColorSelector
+NODE_DISPLAY_NAME_MAPPINGS["MyColorSelector"] = "🎨 顏色選擇器 (Color)"
+
+
+# ==========================================
+# 3. 髮型選擇器 (特化版：自帶兩個顏色輸入)
+# ==========================================
+class HairSelector:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "selected_hair": (load_items("hair.txt"), ),
+                # 幫髮型加上兩個獨立的顏色選單，資料一樣從 color.txt 抓
+                "hair_color_main": (load_items("color.txt"), ), 
+                "hair_color_sub": (load_items("color.txt"), ),
+            }
+        }
+    
+    # 輸出：髮型本身、編號、以及幫你組合好的 Prompt
+    RETURN_TYPES = ("STRING", "INT", "STRING", "STRING", "STRING")
+    RETURN_NAMES = ("髮型字串", "髮型編號", "主色", "副色", "最終組合Prompt")
+    FUNCTION = "get_selection"
+    CATEGORY = "MyCustomNodes/Character_Outfit"
+
+    def get_selection(self, selected_hair, hair_color_main, hair_color_sub):
+        lst = load_items("hair.txt")
+        index = lst.index(selected_hair) if selected_hair in lst else 0
+        
+        # 自動幫你把兩個顏色跟髮型組合成一句話 (你可以自己修改格式)
+        combined_prompt = f"主色{hair_color_main}與副色{hair_color_sub}的{selected_hair}"
+        
+        return (selected_hair, index, hair_color_main, hair_color_sub, combined_prompt)
+
+NODE_CLASS_MAPPINGS["MyHairSelector"] = HairSelector
+NODE_DISPLAY_NAME_MAPPINGS["MyHairSelector"] = "💇‍♀️ 髮型特化選擇器 (Hair)"
+
+
+# ==========================================
+# 4. 其他部位選擇器 (批次建立)
 # ==========================================
 FILE_MAPPINGS = {
     "accessories.txt": ("AccessoriesSelector", "💍 飾品選擇器 (Accessories)"),
     "bags.txt":        ("BagsSelector",        "🎒 包包選擇器 (Bags)"),
     "bottoms.txt":     ("BottomsSelector",     "👖 下著選擇器 (Bottoms)"),
-    "hair.txt":        ("HairSelector",        "💇‍♀️ 髮型選擇器 (Hair)"),
     "neckwear.txt":    ("NeckwearSelector",    "🧣 頸部配件選擇器 (Neckwear)"),
     "shoes.txt":       ("ShoesSelector",       "👟 鞋子選擇器 (Shoes)"),
     "tops.txt":        ("TopsSelector",        "👕 上著選擇器 (Tops)"),
     "wrist.txt":       ("WristSelector",       "⌚ 腕部配件選擇器 (Wrist)"),
 }
 
-# ==========================================
-# 3. 節點產生器 (Factory)
-# ==========================================
 def create_selector_class(file_name):
     class DynamicSelectorNode:
         @classmethod
         def INPUT_TYPES(s):
-            # 每個節點只會載入自己對應的那個 txt 檔
             return {"required": {"selected_item": (load_items(file_name), )}}
         
         RETURN_TYPES = ("STRING", "INT")
         RETURN_NAMES = ("物品字串", "物品編號")
         FUNCTION = "get_selection"
-        # 將它們統一收納在一個專屬的右鍵選單分類中
-        CATEGORY = "MyCustomNodes/Character_Outfit" 
+        CATEGORY = "MyCustomNodes/Character_Outfit"
 
         def get_selection(self, selected_item):
             lst = load_items(file_name)
@@ -56,16 +104,9 @@ def create_selector_class(file_name):
             
     return DynamicSelectorNode
 
-# ==========================================
-# 4. 批次建立並註冊這 8 個節點
-# ==========================================
 for file_name, (class_name, display_name) in FILE_MAPPINGS.items():
-    # 呼叫產生器，為該檔案量身打造一個節點類別
     node_class = create_selector_class(file_name)
-    
-    # 註冊到 ComfyUI 系統中
     NODE_CLASS_MAPPINGS[class_name] = node_class
     NODE_DISPLAY_NAME_MAPPINGS[class_name] = display_name
 
-# 導出設定
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
