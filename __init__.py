@@ -120,4 +120,51 @@ for file_name, (class_name, display_name, prefix_text) in FILE_MAPPINGS.items():
     NODE_CLASS_MAPPINGS[class_name] = node_class
     NODE_DISPLAY_NAME_MAPPINGS[class_name] = display_name
 
+# ==========================================
+# 5. 終極服裝 Prompt 融合器 (支援選填 Optional)
+# ==========================================
+class OutfitPromptBuilder:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                # 基礎咒語（例如：1girl, masterpiece, highly detailed）
+                "base_prompt": ("STRING", {"multiline": True, "default": "1girl, masterpiece, best quality"}),
+            },
+            "optional": {
+                # 所有部位都設為選填 (Optional)，沒拉線也不會當機！
+                "hair": ("STRING", {"forceInput": True}),
+                "tops": ("STRING", {"forceInput": True}),
+                "bottoms": ("STRING", {"forceInput": True}),
+                "shoes": ("STRING", {"forceInput": True}),
+                "accessories": ("STRING", {"forceInput": True}),
+                "bags": ("STRING", {"forceInput": True}),
+                "neckwear": ("STRING", {"forceInput": True}),
+                "wrist": ("STRING", {"forceInput": True}),
+            }
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("最終完整 Prompt",)
+    FUNCTION = "build_prompt"
+    CATEGORY = "MyCustomNodes/Character_Outfit"
+
+    # 沒接線的參數預設會傳入 None 或空字串
+    def build_prompt(self, base_prompt, hair="", tops="", bottoms="", shoes="", accessories="", bags="", neckwear="", wrist=""):
+        
+        # 1. 把所有收到的字串裝進一個列表
+        parts = [base_prompt, hair, tops, bottoms, shoes, accessories, bags, neckwear, wrist]
+        
+        # 2. 過濾掉空的、沒拉線的、或者是 None 的項目
+        valid_parts = [p for p in parts if p and isinstance(p, str) and p.strip() != ""]
+        
+        # 3. 用逗號和一個半形空白 ", " 把所有字串完美拼接起來
+        final_prompt = ", ".join(valid_parts)
+        
+        return (final_prompt,)
+
+# 記得把新節點註冊進去
+NODE_CLASS_MAPPINGS["MyOutfitPromptBuilder"] = OutfitPromptBuilder
+NODE_DISPLAY_NAME_MAPPINGS["MyOutfitPromptBuilder"] = "🧩 終極服裝 Prompt 融合器"
+
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
