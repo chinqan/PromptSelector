@@ -18,7 +18,7 @@ NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
 # ==========================================
-# 2. 顏色選擇器 (維持不變)
+# 2. 顏色選擇器 (獨立放到 Color 分類)
 # ==========================================
 class ColorSelector:
     @classmethod
@@ -40,7 +40,7 @@ NODE_DISPLAY_NAME_MAPPINGS["MyColorSelector"] = "🎨 顏色選擇器 (Color)"
 
 
 # ==========================================
-# 3. 髮型選擇器 (加入專屬前綴)
+# 3. 髮型選擇器 (加入下拉選單 + 連線覆寫機制)
 # ==========================================
 class HairSelector:
     @classmethod
@@ -48,33 +48,51 @@ class HairSelector:
         return {
             "required": {
                 "selected_hair": (load_items("hair.txt"), ),
-                "hair_color_main": ("STRING", {"forceInput": True}), 
-                "hair_color_sub": ("STRING", {"forceInput": True}),
+                # 恢復主副色的下拉選單
+                "hair_color_main_dropdown": (load_items("color.txt"), ), 
+                "hair_color_sub_dropdown": (load_items("color.txt"), ),
+            },
+            "optional": {
+                # 新增主副色的連線覆寫端點
+                "hair_color_main_override": ("STRING", {"forceInput": True}),
+                "hair_color_sub_override": ("STRING", {"forceInput": True}),
             }
         }
     
     RETURN_TYPES = ("STRING", "INT", "STRING", "STRING", "STRING")
-    RETURN_NAMES = ("髮型字串", "髮型編號", "主色", "副色", "最終組合Prompt")
+    RETURN_NAMES = ("髮型字串", "髮型編號", "最終主色", "最終副色", "最終組合Prompt")
     FUNCTION = "get_selection"
     CATEGORY = "MyCustomNodes/Character_Outfit"
 
-    def get_selection(self, selected_hair, hair_color_main, hair_color_sub):
+    # 注意這裡接收了 override 變數，並給預設值 None
+    def get_selection(self, selected_hair, hair_color_main_dropdown, hair_color_sub_dropdown, hair_color_main_override=None, hair_color_sub_override=None):
         lst = load_items("hair.txt")
         index = lst.index(selected_hair) if selected_hair in lst else 0
         
-        # 加上「留著」作為前綴
-        combined_prompt = f"留著主色{hair_color_main}與副色{hair_color_sub}的{selected_hair}"
+        # 主色判斷：有連線用連線，沒連線用選單
+        if hair_color_main_override and isinstance(hair_color_main_override, str) and hair_color_main_override.strip() != "":
+            final_main = hair_color_main_override
+        else:
+            final_main = hair_color_main_dropdown
+
+        # 副色判斷：有連線用連線，沒連線用選單
+        if hair_color_sub_override and isinstance(hair_color_sub_override, str) and hair_color_sub_override.strip() != "":
+            final_sub = hair_color_sub_override
+        else:
+            final_sub = hair_color_sub_dropdown
+
+        # 加上「留著」作為前綴，並使用最終決定的顏色
+        combined_prompt = f"留著主色{final_main}與副色{final_sub}的{selected_hair}"
         
-        return (selected_hair, index, hair_color_main, hair_color_sub, combined_prompt)
+        return (selected_hair, index, final_main, final_sub, combined_prompt)
 
 NODE_CLASS_MAPPINGS["MyHairSelector"] = HairSelector
 NODE_DISPLAY_NAME_MAPPINGS["MyHairSelector"] = "💇‍♀️ 髮型特化選擇器 (Hair)"
 
 
 # ==========================================
-# 4. 其他部位選擇器 (配置升級：綁定專屬前綴詞)
+# 4. 其他部位選擇器 (加入下拉選單 + 連線覆寫機制)
 # ==========================================
-# 格式改為： "檔案名稱": ("類別名稱", "顯示名稱", "專屬前綴詞")
 FILE_MAPPINGS = {
     "accessories.txt": ("AccessoriesSelector", "💍 飾品選擇器 (Accessories)", "配戴著"),
     "bags.txt":        ("BagsSelector",        "🎒 包包選擇器 (Bags)",        "背著"),
@@ -85,7 +103,6 @@ FILE_MAPPINGS = {
     "wrist.txt":       ("WristSelector",       "⌚ 腕部配件選擇器 (Wrist)",    "手腕上配戴著"),
 }
 
-# 讓產生器接收第三個參數 prefix_text
 def create_selector_class(file_name, prefix_text):
     class DynamicSelectorNode:
         @classmethod
@@ -93,32 +110,42 @@ def create_selector_class(file_name, prefix_text):
             return {
                 "required": {
                     "selected_item": (load_items(file_name), ),
-                    "color": ("STRING", {"forceInput": True}), 
+                    # 恢復顏色的下拉選單
+                    "color_dropdown": (load_items("color.txt"), ), 
+                },
+                "optional": {
+                    # 新增顏色的連線覆寫端點
+                    "color_input_override": ("STRING", {"forceInput": True}),
                 }
             }
         
         RETURN_TYPES = ("STRING", "INT", "STRING", "STRING")
-        RETURN_NAMES = ("物品字串", "物品編號", "顏色字串", "最終組合Prompt")
+        RETURN_NAMES = ("物品字串", "物品編號", "最終採用顏色", "最終組合Prompt")
         FUNCTION = "get_selection"
         CATEGORY = "MyCustomNodes/Character_Outfit"
 
-        def get_selection(self, selected_item, color):
+        def get_selection(self, selected_item, color_dropdown, color_input_override=None):
             lst = load_items(file_name)
             index = lst.index(selected_item) if selected_item in lst else 0
             
-            # 魔法在這裡！自動組合：前綴詞 + 顏色 + 的 + 物品
-            # 例如："上半身穿著" + "紅色" + "的" + "襯衫"
-            combined_prompt = f"{prefix_text}{color}的{selected_item}"
+            # 判斷邏輯：有連線用連線，沒連線用選單
+            if color_input_override and isinstance(color_input_override, str) and color_input_override.strip() != "":
+                final_color = color_input_override
+            else:
+                final_color = color_dropdown
             
-            return (selected_item, index, color, combined_prompt)
+            # 自動組合：前綴詞 + 最終顏色 + 的 + 物品
+            combined_prompt = f"{prefix_text}{final_color}的{selected_item}"
+            
+            return (selected_item, index, final_color, combined_prompt)
             
     return DynamicSelectorNode
 
 for file_name, (class_name, display_name, prefix_text) in FILE_MAPPINGS.items():
-    # 將前綴詞一併送進產生器
     node_class = create_selector_class(file_name, prefix_text)
     NODE_CLASS_MAPPINGS[class_name] = node_class
     NODE_DISPLAY_NAME_MAPPINGS[class_name] = display_name
+
 
 # ==========================================
 # 5. 終極服裝 Prompt 融合器 (支援選填 Optional)
@@ -128,11 +155,9 @@ class OutfitPromptBuilder:
     def INPUT_TYPES(s):
         return {
             "required": {
-                # 基礎咒語（例如：1girl, masterpiece, highly detailed）
                 "base_prompt": ("STRING", {"multiline": True, "default": "1girl, masterpiece, best quality"}),
             },
             "optional": {
-                # 所有部位都設為選填 (Optional)，沒拉線也不會當機！
                 "hair": ("STRING", {"forceInput": True}),
                 "tops": ("STRING", {"forceInput": True}),
                 "bottoms": ("STRING", {"forceInput": True}),
@@ -147,23 +172,14 @@ class OutfitPromptBuilder:
     RETURN_TYPES = ("STRING",)
     RETURN_NAMES = ("最終完整 Prompt",)
     FUNCTION = "build_prompt"
-    CATEGORY = "MyCustomNodes/Character_Outfit"
+    CATEGORY = "MyCustomNodes/ Final"
 
-    # 沒接線的參數預設會傳入 None 或空字串
     def build_prompt(self, base_prompt, hair="", tops="", bottoms="", shoes="", accessories="", bags="", neckwear="", wrist=""):
-        
-        # 1. 把所有收到的字串裝進一個列表
         parts = [base_prompt, hair, tops, bottoms, shoes, accessories, bags, neckwear, wrist]
-        
-        # 2. 過濾掉空的、沒拉線的、或者是 None 的項目
         valid_parts = [p for p in parts if p and isinstance(p, str) and p.strip() != ""]
-        
-        # 3. 用逗號和一個半形空白 ", " 把所有字串完美拼接起來
         final_prompt = ", ".join(valid_parts)
-        
         return (final_prompt,)
 
-# 記得把新節點註冊進去
 NODE_CLASS_MAPPINGS["MyOutfitPromptBuilder"] = OutfitPromptBuilder
 NODE_DISPLAY_NAME_MAPPINGS["MyOutfitPromptBuilder"] = "🧩 終極服裝 Prompt 融合器"
 
