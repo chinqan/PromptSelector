@@ -1,60 +1,84 @@
 import os
+import glob
 
-# 1. 自動取得目前這個 __init__.py 所在的資料夾路徑，並指向 color.txt
 current_dir = os.path.dirname(os.path.abspath(__file__))
-file_path = os.path.join(current_dir, "color.txt")
 
-# 2. 建立一個讀取文字檔的函式
-def load_items_from_file():
-    items = []
-    # 檢查檔案是否存在，避免 ComfyUI 啟動時找不到檔案而崩潰
-    if os.path.exists(file_path):
-        with open(file_path, "r", encoding="utf-8") as f:
+# 1. 讀取顏色專用函式
+def load_colors():
+    color_file = os.path.join(current_dir, "color.txt")
+    colors = []
+    if os.path.exists(color_file):
+        with open(color_file, "r", encoding="utf-8") as f:
             for line in f:
-                item = line.strip() # 去除頭尾的空白與換行符號
-                if item:            # 確保不是空白行
-                    items.append(item)
-                    
-    # 防呆機制：如果檔案不存在或裡面沒寫東西，給一個預設清單
-    if not items:
-        items = ["找不到檔案或檔案為空"]
+                item = line.strip()
+                if item: colors.append(item)
+    return colors if colors else ["找不到 color.txt"]
+
+# 2. 讀取所有物品檔案的函式
+def load_items():
+    # 抓取資料夾內所有 txt，但排除 color.txt
+    txt_files = [f for f in glob.glob(os.path.join(current_dir, "*.txt")) if not f.endswith("color.txt")]
+    
+    display_list = []
+    item_map = {}
+    
+    for file_path in txt_files:
+        # 取得檔名 (不含 .txt，例如從 item1.txt 取得 item1)
+        filename = os.path.splitext(os.path.basename(file_path))[0]
         
-    return items
+        with open(file_path, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+            for index, line in enumerate(lines):
+                real_item = line.strip()
+                if real_item:
+                    # 組合選單上的顯示文字，例如 "[item1] 寶劍"
+                    display_text = f"[{filename}] {real_item}"
+                    display_list.append(display_text)
+                    
+                    # 字典記錄：顯示文字對應 -> (真實字串, 檔案內編號)
+                    item_map[display_text] = (real_item, index)
+                    
+    if not display_list:
+        display_list = ["找不到任何物品 txt 檔"]
+        item_map["找不到任何物品 txt 檔"] = ("無", 0)
+        
+    return display_list, item_map
 
-# 在伺服器啟動時，讀取文字檔並把結果存入 COLOR_LIST
-COLOR_LIST = load_items_from_file()
+# 在啟動時載入資料
+COLOR_LIST = load_colors()
+ITEM_DISPLAY_LIST, ITEM_MAP = load_items()
 
-class DynamicFileSelector:
+class GameAssetSelector:
     @classmethod
     def INPUT_TYPES(s):
         return {
             "required": {
-                # 將讀取到的清單變數 COLOR_LIST 放入下拉選單
-                "selected_item": (COLOR_LIST, ),
+                "selected_color": (COLOR_LIST, ),
+                "selected_item": (ITEM_DISPLAY_LIST, ),
             }
         }
     
-    # 3. 定義兩個輸出：第一個是字串 (STRING)，第二個是整數編號 (INT)
-    RETURN_TYPES = ("STRING", "INT")
-    RETURN_NAMES = ("顏色字串", "顏色編號") # 節點上顯示的輸出端點名稱
-    
+    # 定義 5 個輸出
+    RETURN_TYPES = ("STRING", "INT", "STRING", "INT", "STRING")
+    RETURN_NAMES = ("顏色字串", "顏色編號", "物品字串", "物品編號", "最終組合Prompt")
     FUNCTION = "get_selection"
     CATEGORY = "MyCustomNodes/Data"
 
-    def get_selection(self, selected_item):
-        # 找出選中的字串在 COLOR_LIST 裡面是第幾個 (這就是它的編號)
-        # 注意：程式語言的索引是從 0 開始。如果你希望編號從 1 開始，請在後面加上 + 1 (例如: index = COLOR_LIST.index(selected_item) + 1)
-        index = COLOR_LIST.index(selected_item)
+    def get_selection(self, selected_color, selected_item):
+        color_index = COLOR_LIST.index(selected_color)
         
-        # 同時回傳字串與編號 (順序必須和 RETURN_TYPES 呼應)
-        return (selected_item, index)
+        # 透過字典，解開選單文字，還原成真實物品與編號
+        real_item, item_index = ITEM_MAP.get(selected_item, ("無", 0))
+        
+        # 組合字串，直接生成 "紅色的寶劍"
+        combined_prompt = f"{selected_color}的{real_item}"
+        
+        return (selected_color, color_index, real_item, item_index, combined_prompt)
 
-# 註冊節點
 NODE_CLASS_MAPPINGS = {
-    "DynamicFileSelector": DynamicFileSelector
+    "GameAssetSelector": GameAssetSelector
 }
-
-# 節點顯示名稱
 NODE_DISPLAY_NAME_MAPPINGS = {
-    "DynamicFileSelector": "動態文字檔下拉選單 (File Selector)"
+    "GameAssetSelector": "遊戲素材 顏色與物品選擇器"
 }
+__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
