@@ -173,28 +173,28 @@ class MasterOutfitSelector:
         if hair != "無" and "(找不到" not in hair:
             if c_hair_main != "無" and c_hair_sub != "無":
                 p_hair = f"留著主色{c_hair_main}與副色{c_hair_sub}相間的{hair}"
-                o_hair = f"{c_hair_main}|{c_hair_sub}的{hair}"
+                o_hair = f"{c_hair_main}|{c_hair_sub}的{hair}\n"
             elif c_hair_main != "無":
                 p_hair = f"留著{c_hair_main}的{hair}"
-                o_hair = f"{c_hair_main}的{hair},"
+                o_hair = f"{c_hair_main}的{hair}\n"
             else:
                 p_hair = f"留著{hair}"
-                o_hair = f"{hair},"
+                o_hair = f"{hair}\n"
 
         p_tops = format_part(tops, c_tops, "上半身穿著")
-        o_tops = format_part(tops, c_tops, "")
+        o_tops = format_part(tops, c_tops, "\n")
         p_bottoms = format_part(bottoms, c_bottoms, "下半身穿著")
-        o_bottoms = format_part(bottoms, c_bottoms, "")
+        o_bottoms = format_part(bottoms, c_bottoms, "\n")
         p_shoes = format_part(shoes, c_shoes, "腳上穿著")
         o_shoes = format_part(shoes, c_shoes, "\n")
         p_acc = format_part(accessories, c_acc, "配戴著")
-        o_acc = format_part(accessories, c_acc, "")
+        o_acc = format_part(accessories, c_acc, "\n")
         p_bags = format_part(bags, c_bags, "背著")
-        o_bags = format_part(bags, c_bags, "")
+        o_bags = format_part(bags, c_bags, "\n")
         p_neck = format_part(neckwear, c_neck, "脖子上圍著")
-        o_neck = format_part(neckwear, c_neck, "")
+        o_neck = format_part(neckwear, c_neck, "\n")
         p_wrist = format_part(wrist, c_wrist, "手腕上配戴著")
-        o_wrist = format_part(wrist, c_wrist, "")
+        o_wrist = format_part(wrist, c_wrist, "\n")
 
         all_parts = [base_prompt.strip()] if base_prompt.strip() else []
         for p in [p_hair, p_tops, p_bottoms, p_shoes, p_acc, p_bags, p_neck, p_wrist]:

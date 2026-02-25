@@ -1,3 +1,4 @@
+
 class TextModeSwitch:
     def __init__(self):
         pass
@@ -17,7 +18,7 @@ class TextModeSwitch:
     RETURN_TYPES = ("STRING", "STRING")
     RETURN_NAMES = ("text1", "text2")
     FUNCTION = "switch_logic"
-    CATEGORY = "CustomLogic"
+    CATEGORY = "MyCustomNodes"
 
     def switch_logic(self, mode, textA1, textA2, textB1, textB2):
         if mode == "Mode_A":
@@ -26,4 +27,3 @@ class TextModeSwitch:
         else:
             # 模式 B：將 B1, B2 導向輸出
             return (textB1, textB2)
-        
