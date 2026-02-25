@@ -41,6 +41,8 @@ class ColorSelector:
         final_color = "" if selected_color == "無" or "(找不到" in selected_color else selected_color
         return (final_color, index)
 
+NODE_CLASS_MAPPINGS["MyColorSelector"] = ColorSelector
+NODE_DISPLAY_NAME_MAPPINGS["MyColorSelector"] = "🎨 顏色選擇器 (Color)"
 
 # ==========================================
 # 3. 角色服裝總控大節點 (全圖示版)
@@ -203,20 +205,13 @@ class MasterOutfitSelector:
         
         return (o_hair, o_tops, o_bottoms, o_shoes, o_acc, o_bags, o_neck, o_wrist, final_prompt)
 
+NODE_CLASS_MAPPINGS["MasterOutfitSelector"] = MasterOutfitSelector
+NODE_DISPLAY_NAME_MAPPINGS["MasterOutfitSelector"] = "👑 角色服裝總控中心 (Master Outfit)"
 
 
 # 節點註冊對照表
-NODE_CLASS_MAPPINGS = {
-    "MasterOutfitSelector": MasterOutfitSelector,
-    "TextModeSwitch": TextModeSwitch,
-    "MyColorSelector": ColorSelector
-}
+NODE_CLASS_MAPPINGS["TextModeSwitch"] =  TextModeSwitch
+NODE_DISPLAY_NAME_MAPPINGS["TextModeSwitch"] =  "Dual Text Switch (A/B)"
 
-# 節點在選單中顯示的名稱
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "MasterOutfitSelector":"👑 角色服裝總控中心 (Master Outfit)",
-    "TextModeSwitch": "Dual Text Switch (A/B)",
-    "MyColorSelector": ColorSelector
-}
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
