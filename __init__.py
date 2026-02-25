@@ -41,8 +41,6 @@ class ColorSelector:
         final_color = "" if selected_color == "無" or "(找不到" in selected_color else selected_color
         return (final_color, index)
 
-NODE_CLASS_MAPPINGS["MyColorSelector"] = ColorSelector
-NODE_DISPLAY_NAME_MAPPINGS["MyColorSelector"] = "🎨 顏色選擇器 (Color)"
 
 # ==========================================
 # 3. 角色服裝總控大節點 (全圖示版)
@@ -205,8 +203,6 @@ class MasterOutfitSelector:
         
         return (o_hair, o_tops, o_bottoms, o_shoes, o_acc, o_bags, o_neck, o_wrist, final_prompt)
 
-NODE_CLASS_MAPPINGS["MasterOutfitSelector"] = MasterOutfitSelector
-NODE_DISPLAY_NAME_MAPPINGS["MasterOutfitSelector"] = "👑 角色服裝總控中心 (Master Outfit)"
 
 
 # 節點註冊對照表
