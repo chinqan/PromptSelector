@@ -1,5 +1,5 @@
 import os
-from .textmodestwith import TextModeSwitch
+from .textmodeswitch import TextModeSwitch
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
