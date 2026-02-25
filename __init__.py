@@ -173,7 +173,7 @@ class MasterOutfitSelector:
         if hair != "無" and "(找不到" not in hair:
             if c_hair_main != "無" and c_hair_sub != "無":
                 p_hair = f"留著主色{c_hair_main}與副色{c_hair_sub}相間的{hair}"
-                o_hair = f"{c_hair_main}|{c_hair_sub}的{hair}\n"
+                o_hair = f"{c_hair_main}{c_hair_sub}的{hair}\n"
             elif c_hair_main != "無":
                 p_hair = f"留著{c_hair_main}的{hair}"
                 o_hair = f"{c_hair_main}的{hair}\n"
