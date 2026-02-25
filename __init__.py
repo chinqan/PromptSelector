@@ -5,7 +5,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 # 1. 讀取函式 (自動在最上面加入「無」)
 def load_items(file_name):
     file_path = os.path.join(current_dir, file_name)
-    items = ["無"] # 預設第一個選項為「無」
+    items = ["無"] 
     
     if os.path.exists(file_path):
         with open(file_path, "r", encoding="utf-8") as f:
@@ -14,7 +14,7 @@ def load_items(file_name):
                 if item and item != "無":
                     items.append(item)
                     
-    if len(items) == 1: # 如果檔案不存在或只有「無」
+    if len(items) == 1: 
         items.append(f"(找不到 {file_name})")
         
     return items
@@ -23,7 +23,7 @@ NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
 # ==========================================
-# 2. 獨立顏色選擇器 (保留下來供其他用途使用)
+# 2. 獨立顏色選擇器
 # ==========================================
 class ColorSelector:
     @classmethod
@@ -38,10 +38,7 @@ class ColorSelector:
     def get_selection(self, selected_color):
         lst = load_items("color.txt")
         index = lst.index(selected_color) if selected_color in lst else 0
-        
-        # 貼心小設計：如果選了「無」，就輸出空字串，避免你的 Prompt 裡出現奇怪的「無」字
         final_color = "" if selected_color == "無" or "(找不到" in selected_color else selected_color
-        
         return (final_color, index)
 
 NODE_CLASS_MAPPINGS["MyColorSelector"] = ColorSelector
@@ -49,20 +46,18 @@ NODE_DISPLAY_NAME_MAPPINGS["MyColorSelector"] = "🎨 顏色選擇器 (Color)"
 
 
 # ==========================================
-# 3. 角色服裝總控大節點 (Master Node)
+# 3. 角色服裝總控大節點 (加入連線覆寫機制)
 # ==========================================
 class MasterOutfitSelector:
     @classmethod
     def INPUT_TYPES(s):
-        # 預先載入共用的顏色清單
         color_list = load_items("color.txt")
         
         return {
             "required": {
-                # 基礎咒語
                 "base_prompt": ("STRING", {"multiline": True, "default": "1girl, masterpiece, best quality"}),
                 
-                # 所有部位都採用純下拉選單
+                # 下拉選單區
                 "hair": (load_items("hair.txt"), ),
                 "hair_color_main": (color_list, ),
                 "hair_color_sub": (color_list, ),
@@ -87,10 +82,21 @@ class MasterOutfitSelector:
                 
                 "wrist": (load_items("wrist.txt"), ),
                 "wrist_color": (color_list, ),
+            },
+            "optional": {
+                # 左側連線區 (供 ColorSelector 直接插線覆寫)
+                "hair_color_main_link": ("STRING", {"forceInput": True}),
+                "hair_color_sub_link": ("STRING", {"forceInput": True}),
+                "tops_color_link": ("STRING", {"forceInput": True}),
+                "bottoms_color_link": ("STRING", {"forceInput": True}),
+                "shoes_color_link": ("STRING", {"forceInput": True}),
+                "accessories_color_link": ("STRING", {"forceInput": True}),
+                "bags_color_link": ("STRING", {"forceInput": True}),
+                "neckwear_color_link": ("STRING", {"forceInput": True}),
+                "wrist_color_link": ("STRING", {"forceInput": True}),
             }
         }
     
-    # 取消編號，只保留 8 個部位的獨立字串，以及最後 1 個總組合字串
     RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = (
         "髮型 Prompt", "上著 Prompt", "下著 Prompt", "鞋子 Prompt", 
@@ -100,13 +106,37 @@ class MasterOutfitSelector:
     FUNCTION = "build_prompt"
     CATEGORY = "MyCustomNodes/Character_Outfit"
 
-    def build_prompt(self, base_prompt, hair, hair_color_main, hair_color_sub,
+    def build_prompt(self, base_prompt, 
+                     hair, hair_color_main, hair_color_sub,
                      tops, tops_color, bottoms, bottoms_color,
                      shoes, shoes_color, accessories, accessories_color,
                      bags, bags_color, neckwear, neckwear_color,
-                     wrist, wrist_color):
+                     wrist, wrist_color,
+                     # 接收連線傳來的參數 (預設為 None)
+                     hair_color_main_link=None, hair_color_sub_link=None,
+                     tops_color_link=None, bottoms_color_link=None,
+                     shoes_color_link=None, accessories_color_link=None,
+                     bags_color_link=None, neckwear_color_link=None,
+                     wrist_color_link=None):
         
-        # 輔助函式：判斷是否為「無」，並自動組合前綴詞與顏色
+        # 覆寫判定大師：如果有連線且字串不為空，就採用連線的顏色，否則用下拉選單
+        def resolve_color(dropdown_color, linked_color):
+            if linked_color is not None and isinstance(linked_color, str) and linked_color.strip() != "":
+                return linked_color
+            return dropdown_color
+
+        # 算出最終決定採用的顏色
+        c_hair_main = resolve_color(hair_color_main, hair_color_main_link)
+        c_hair_sub = resolve_color(hair_color_sub, hair_color_sub_link)
+        c_tops = resolve_color(tops_color, tops_color_link)
+        c_bottoms = resolve_color(bottoms_color, bottoms_color_link)
+        c_shoes = resolve_color(shoes_color, shoes_color_link)
+        c_acc = resolve_color(accessories_color, accessories_color_link)
+        c_bags = resolve_color(bags_color, bags_color_link)
+        c_neck = resolve_color(neckwear_color, neckwear_color_link)
+        c_wrist = resolve_color(wrist_color, wrist_color_link)
+
+        # 輔助函式：判斷是否為「無」，並自動組合
         def format_part(item, color, prefix):
             if item == "無" or "(找不到" in item: 
                 return ""
@@ -117,29 +147,29 @@ class MasterOutfitSelector:
         # 髮型組合邏輯
         p_hair = ""
         if hair != "無" and "(找不到" not in hair:
-            if hair_color_main != "無" and hair_color_sub != "無":
-                p_hair = f"留著主色{hair_color_main}與副色{hair_color_sub}的{hair}"
-            elif hair_color_main != "無":
-                p_hair = f"留著{hair_color_main}的{hair}"
+            if c_hair_main != "無" and c_hair_sub != "無":
+                p_hair = f"留著主色{c_hair_main}與副色{c_hair_sub}的{hair}"
+            elif c_hair_main != "無":
+                p_hair = f"留著{c_hair_main}的{hair}"
             else:
                 p_hair = f"留著{hair}"
 
-        # 其他部位組合邏輯
-        p_tops = format_part(tops, tops_color, "上半身穿著")
-        p_bottoms = format_part(bottoms, bottoms_color, "下半身穿著")
-        p_shoes = format_part(shoes, shoes_color, "腳上穿著")
-        p_acc = format_part(accessories, accessories_color, "配戴著")
-        p_bags = format_part(bags, bags_color, "背著")
-        p_neck = format_part(neckwear, neckwear_color, "脖子上圍著")
-        p_wrist = format_part(wrist, wrist_color, "手腕上配戴著")
+        # 其他部位組合邏輯 (全部套用剛才算好的最終顏色)
+        p_tops = format_part(tops, c_tops, "上半身穿著")
+        p_bottoms = format_part(bottoms, c_bottoms, "下半身穿著")
+        p_shoes = format_part(shoes, c_shoes, "腳上穿著")
+        p_acc = format_part(accessories, c_acc, "配戴著")
+        p_bags = format_part(bags, c_bags, "背著")
+        p_neck = format_part(neckwear, c_neck, "脖子上圍著")
+        p_wrist = format_part(wrist, c_wrist, "手腕上配戴著")
 
-        # 收集所有「非空白」的字串，準備組裝最終 Prompt
+        # 收集所有「非空白」的字串
         all_parts = [base_prompt.strip()] if base_prompt.strip() else []
         for p in [p_hair, p_tops, p_bottoms, p_shoes, p_acc, p_bags, p_neck, p_wrist]:
             if p:
                 all_parts.append(p)
         
-        # 用逗號串接全部
+        # 用逗號串接
         final_prompt = ", ".join(all_parts)
         
         return (p_hair, p_tops, p_bottoms, p_shoes, p_acc, p_bags, p_neck, p_wrist, final_prompt)
