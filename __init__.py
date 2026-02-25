@@ -212,13 +212,15 @@ NODE_DISPLAY_NAME_MAPPINGS["MasterOutfitSelector"] = "👑 角色服裝總控中
 # 節點註冊對照表
 NODE_CLASS_MAPPINGS = {
     "MasterOutfitSelector": MasterOutfitSelector,
-    "TextModeSwitch": TextModeSwitch
+    "TextModeSwitch": TextModeSwitch,
+    "MyColorSelector": ColorSelector
 }
 
 # 節點在選單中顯示的名稱
 NODE_DISPLAY_NAME_MAPPINGS = {
     "MasterOutfitSelector":"👑 角色服裝總控中心 (Master Outfit)",
-    "TextModeSwitch": "Dual Text Switch (A/B)"
+    "TextModeSwitch": "Dual Text Switch (A/B)",
+    "MyColorSelector": ColorSelector
 }
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
