@@ -185,7 +185,7 @@ class MasterOutfitSelector:
         p_bottoms = format_part(bottoms, c_bottoms, "下半身穿著")
         o_bottoms = format_part(bottoms, c_bottoms, "")
         p_shoes = format_part(shoes, c_shoes, "腳上穿著")
-        o_shoes = format_part(shoes, c_shoes, "")
+        o_shoes = format_part(shoes, c_shoes, "\n")
         p_acc = format_part(accessories, c_acc, "配戴著")
         o_acc = format_part(accessories, c_acc, "")
         p_bags = format_part(bags, c_bags, "背著")
