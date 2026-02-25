@@ -2,7 +2,7 @@ import os
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
-# 1. 讀取函式 (自動在最上面加入「無」，方便使用者選擇不穿戴該部位)
+# 1. 讀取函式 (自動在最上面加入「無」)
 def load_items(file_name):
     file_path = os.path.join(current_dir, file_name)
     items = ["無"] # 預設第一個選項為「無」
@@ -19,8 +19,37 @@ def load_items(file_name):
         
     return items
 
+NODE_CLASS_MAPPINGS = {}
+NODE_DISPLAY_NAME_MAPPINGS = {}
+
 # ==========================================
-# 2. 角色服裝總控大節點 (Master Node)
+# 2. 獨立顏色選擇器 (保留下來供其他用途使用)
+# ==========================================
+class ColorSelector:
+    @classmethod
+    def INPUT_TYPES(s):
+        return {"required": {"selected_color": (load_items("color.txt"), )}}
+    
+    RETURN_TYPES = ("STRING", "INT")
+    RETURN_NAMES = ("顏色字串", "顏色編號")
+    FUNCTION = "get_selection"
+    CATEGORY = "MyCustomNodes/Color"
+
+    def get_selection(self, selected_color):
+        lst = load_items("color.txt")
+        index = lst.index(selected_color) if selected_color in lst else 0
+        
+        # 貼心小設計：如果選了「無」，就輸出空字串，避免你的 Prompt 裡出現奇怪的「無」字
+        final_color = "" if selected_color == "無" or "(找不到" in selected_color else selected_color
+        
+        return (final_color, index)
+
+NODE_CLASS_MAPPINGS["MyColorSelector"] = ColorSelector
+NODE_DISPLAY_NAME_MAPPINGS["MyColorSelector"] = "🎨 顏色選擇器 (Color)"
+
+
+# ==========================================
+# 3. 角色服裝總控大節點 (Master Node)
 # ==========================================
 class MasterOutfitSelector:
     @classmethod
@@ -115,12 +144,7 @@ class MasterOutfitSelector:
         
         return (p_hair, p_tops, p_bottoms, p_shoes, p_acc, p_bags, p_neck, p_wrist, final_prompt)
 
-# 註冊大節點
-NODE_CLASS_MAPPINGS = {
-    "MasterOutfitSelector": MasterOutfitSelector
-}
-NODE_DISPLAY_NAME_MAPPINGS = {
-    "MasterOutfitSelector": "👑 角色服裝總控中心 (Master Outfit)"
-}
+NODE_CLASS_MAPPINGS["MasterOutfitSelector"] = MasterOutfitSelector
+NODE_DISPLAY_NAME_MAPPINGS["MasterOutfitSelector"] = "👑 角色服裝總控中心 (Master Outfit)"
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
