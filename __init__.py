@@ -168,21 +168,32 @@ class MasterOutfitSelector:
             return f"{prefix}{color}的{item}"
 
         p_hair = ""
+        o_hair = ""
         if hair != "無" and "(找不到" not in hair:
             if c_hair_main != "無" and c_hair_sub != "無":
                 p_hair = f"留著主色{c_hair_main}與副色{c_hair_sub}相間的{hair}"
+                o_hair = f"{c_hair_main}|{c_hair_sub}的{hair},"
             elif c_hair_main != "無":
                 p_hair = f"留著{c_hair_main}的{hair}"
+                o_hair = f"{c_hair_main}的{hair},"
             else:
                 p_hair = f"留著{hair}"
+                o_hair = f"{hair},"
 
         p_tops = format_part(tops, c_tops, "上半身穿著")
+        o_tops = format_part(tops, c_tops, "")
         p_bottoms = format_part(bottoms, c_bottoms, "下半身穿著")
+        o_bottoms = format_part(bottoms, c_bottoms, "")
         p_shoes = format_part(shoes, c_shoes, "腳上穿著")
+        o_shoes = format_part(shoes, c_shoes, "")
         p_acc = format_part(accessories, c_acc, "配戴著")
+        o_acc = format_part(accessories, c_acc, "")
         p_bags = format_part(bags, c_bags, "背著")
+        o_bags = format_part(bags, c_bags, "")
         p_neck = format_part(neckwear, c_neck, "脖子上圍著")
+        o_neck = format_part(neckwear, c_neck, "")
         p_wrist = format_part(wrist, c_wrist, "手腕上配戴著")
+        o_wrist = format_part(wrist, c_wrist, "")
 
         all_parts = [base_prompt.strip()] if base_prompt.strip() else []
         for p in [p_hair, p_tops, p_bottoms, p_shoes, p_acc, p_bags, p_neck, p_wrist]:
@@ -191,7 +202,7 @@ class MasterOutfitSelector:
         
         final_prompt = ", ".join(all_parts)
         
-        return (p_hair, p_tops, p_bottoms, p_shoes, p_acc, p_bags, p_neck, p_wrist, final_prompt)
+        return (o_hair, o_tops, o_bottoms, o_shoes, o_acc, o_bags, o_neck, o_wrist, final_prompt)
 
 NODE_CLASS_MAPPINGS["MasterOutfitSelector"] = MasterOutfitSelector
 NODE_DISPLAY_NAME_MAPPINGS["MasterOutfitSelector"] = "👑 角色服裝總控中心 (Master Outfit)"
