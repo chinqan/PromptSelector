@@ -7,7 +7,7 @@ class TextModeSwitch:
     def INPUT_TYPES(s):
         return {
             "required": {
-                "mode": (["Mode_A", "Mode_B"], {"default": "Mode_A"}),
+                "mode": (["手動調整", "自動生成"], {"default": "手動調整"}),
                 "textA1": ("STRING", {"forceInput": True}),
                 "textA2": ("STRING", {"forceInput": True}),
                 "textB1": ("STRING", {"forceInput": True}),
