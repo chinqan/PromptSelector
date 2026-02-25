@@ -19,19 +19,22 @@ NODE_CLASS_MAPPINGS = {}
 NODE_DISPLAY_NAME_MAPPINGS = {}
 
 # ==========================================
-# 2. 獨立顏色選擇器 (輸出 STRING)
+# 2. 獨立顏色選擇器
 # ==========================================
 class ColorSelector:
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": {"selected_color": (load_items("color.txt"), )}}
+        # 加上調色盤圖示
+        return {"required": {"🎨 選擇顏色 (color)": (load_items("color.txt"), )}}
     
     RETURN_TYPES = ("STRING", "INT")
     RETURN_NAMES = ("顏色字串", "顏色編號")
     FUNCTION = "get_selection"
     CATEGORY = "MyCustomNodes/Color"
 
-    def get_selection(self, selected_color):
+    # 使用 **kwargs 繞過 Python 變數命名限制
+    def get_selection(self, **kwargs):
+        selected_color = kwargs.get("🎨 選擇顏色 (color)", "無")
         lst = load_items("color.txt")
         index = lst.index(selected_color) if selected_color in lst else 0
         final_color = "" if selected_color == "無" or "(找不到" in selected_color else selected_color
@@ -41,7 +44,7 @@ NODE_CLASS_MAPPINGS["MyColorSelector"] = ColorSelector
 NODE_DISPLAY_NAME_MAPPINGS["MyColorSelector"] = "🎨 顏色選擇器 (Color)"
 
 # ==========================================
-# 3. 角色服裝總控大節點 
+# 3. 角色服裝總控大節點 (全圖示版)
 # ==========================================
 class MasterOutfitSelector:
     @classmethod
@@ -50,38 +53,45 @@ class MasterOutfitSelector:
         
         return {
             "required": {
-                "base_prompt": ("STRING", {"multiline": True, "default": "1girl, masterpiece, best quality"}),
+                "📝 基礎咒語 (base_prompt)": ("STRING", {"multiline": True, "default": "1girl, masterpiece, best quality"}),
                 
-                # 面板下拉選單 (COMBO 型態)
-                "hair": (load_items("hair.txt"), ),
-                "hair_color_main": (color_list, ),
-                "hair_color_sub": (color_list, ),
-                "tops": (load_items("tops.txt"), ),
-                "tops_color": (color_list, ),
-                "bottoms": (load_items("bottoms.txt"), ),
-                "bottoms_color": (color_list, ),
-                "shoes": (load_items("shoes.txt"), ),
-                "shoes_color": (color_list, ),
-                "accessories": (load_items("accessories.txt"), ),
-                "accessories_color": (color_list, ),
-                "bags": (load_items("bags.txt"), ),
-                "bags_color": (color_list, ),
-                "neckwear": (load_items("neckwear.txt"), ),
-                "neckwear_color": (color_list, ),
-                "wrist": (load_items("wrist.txt"), ),
-                "wrist_color": (color_list, ),
+                # 在標題加上 Emoji 與清楚的中英文對照
+                "💇‍♀️ 髮型 (hair)": (load_items("hair.txt"), ),
+                "🎨 髮型主色 (hair_color_main)": (color_list, ),
+                "🎨 髮型副色 (hair_color_sub)": (color_list, ),
+                
+                "👕 上著 (tops)": (load_items("tops.txt"), ),
+                "🎨 上著顏色 (tops_color)": (color_list, ),
+                
+                "👖 下著 (bottoms)": (load_items("bottoms.txt"), ),
+                "🎨 下著顏色 (bottoms_color)": (color_list, ),
+                
+                "👟 鞋子 (shoes)": (load_items("shoes.txt"), ),
+                "🎨 鞋子顏色 (shoes_color)": (color_list, ),
+                
+                "💍 飾品 (accessories)": (load_items("accessories.txt"), ),
+                "🎨 飾品顏色 (accessories_color)": (color_list, ),
+                
+                "🎒 包包 (bags)": (load_items("bags.txt"), ),
+                "🎨 包包顏色 (bags_color)": (color_list, ),
+                
+                "🧣 頸部配件 (neckwear)": (load_items("neckwear.txt"), ),
+                "🎨 頸部顏色 (neckwear_color)": (color_list, ),
+                
+                "⌚ 腕部配件 (wrist)": (load_items("wrist.txt"), ),
+                "🎨 腕部顏色 (wrist_color)": (color_list, ),
             },
             "optional": {
-                # 供外部連線專用的 STRING 端點，這才是 ColorSelector 認得的洞！
-                "in_hair_main_color": ("STRING", {"forceInput": True}),
-                "in_hair_sub_color": ("STRING", {"forceInput": True}),
-                "in_tops_color": ("STRING", {"forceInput": True}),
-                "in_bottoms_color": ("STRING", {"forceInput": True}),
-                "in_shoes_color": ("STRING", {"forceInput": True}),
-                "in_accessories_color": ("STRING", {"forceInput": True}),
-                "in_bags_color": ("STRING", {"forceInput": True}),
-                "in_neckwear_color": ("STRING", {"forceInput": True}),
-                "in_wrist_color": ("STRING", {"forceInput": True}),
+                # 連線端點也加上符號，整理 Subgraph 時會更清晰
+                "🔗 髮型主色連線 (in_hair_main)": ("STRING", {"forceInput": True}),
+                "🔗 髮型副色連線 (in_hair_sub)": ("STRING", {"forceInput": True}),
+                "🔗 上著顏色連線 (in_tops)": ("STRING", {"forceInput": True}),
+                "🔗 下著顏色連線 (in_bottoms)": ("STRING", {"forceInput": True}),
+                "🔗 鞋子顏色連線 (in_shoes)": ("STRING", {"forceInput": True}),
+                "🔗 飾品顏色連線 (in_accessories)": ("STRING", {"forceInput": True}),
+                "🔗 包包顏色連線 (in_bags)": ("STRING", {"forceInput": True}),
+                "🔗 頸部顏色連線 (in_neckwear)": ("STRING", {"forceInput": True}),
+                "🔗 腕部顏色連線 (in_wrist)": ("STRING", {"forceInput": True}),
             }
         }
     
@@ -94,34 +104,64 @@ class MasterOutfitSelector:
     FUNCTION = "build_prompt"
     CATEGORY = "MyCustomNodes/Character_Outfit"
 
-    def build_prompt(self, base_prompt, 
-                     hair, hair_color_main, hair_color_sub,
-                     tops, tops_color, bottoms, bottoms_color,
-                     shoes, shoes_color, accessories, accessories_color,
-                     bags, bags_color, neckwear, neckwear_color,
-                     wrist, wrist_color,
-                     in_hair_main_color=None, in_hair_sub_color=None,
-                     in_tops_color=None, in_bottoms_color=None,
-                     in_shoes_color=None, in_accessories_color=None,
-                     in_bags_color=None, in_neckwear_color=None,
-                     in_wrist_color=None):
+    # 使用 **kwargs 來接收帶有特殊符號的變數名稱
+    def build_prompt(self, **kwargs):
         
-        # 決定顏色：如果有連線進來的字串就用連線的，否則用下拉選單的
+        # 1. 從 kwargs 中安全地把帶有 Emoji 的變數取出來
+        base_prompt = kwargs.get("📝 基礎咒語 (base_prompt)", "")
+        
+        hair = kwargs.get("💇‍♀️ 髮型 (hair)", "無")
+        hair_color_main = kwargs.get("🎨 髮型主色 (hair_color_main)", "無")
+        hair_color_sub = kwargs.get("🎨 髮型副色 (hair_color_sub)", "無")
+        
+        tops = kwargs.get("👕 上著 (tops)", "無")
+        tops_color = kwargs.get("🎨 上著顏色 (tops_color)", "無")
+        
+        bottoms = kwargs.get("👖 下著 (bottoms)", "無")
+        bottoms_color = kwargs.get("🎨 下著顏色 (bottoms_color)", "無")
+        
+        shoes = kwargs.get("👟 鞋子 (shoes)", "無")
+        shoes_color = kwargs.get("🎨 鞋子顏色 (shoes_color)", "無")
+        
+        accessories = kwargs.get("💍 飾品 (accessories)", "無")
+        accessories_color = kwargs.get("🎨 飾品顏色 (accessories_color)", "無")
+        
+        bags = kwargs.get("🎒 包包 (bags)", "無")
+        bags_color = kwargs.get("🎨 包包顏色 (bags_color)", "無")
+        
+        neckwear = kwargs.get("🧣 頸部配件 (neckwear)", "無")
+        neckwear_color = kwargs.get("🎨 頸部顏色 (neckwear_color)", "無")
+        
+        wrist = kwargs.get("⌚ 腕部配件 (wrist)", "無")
+        wrist_color = kwargs.get("🎨 腕部顏色 (wrist_color)", "無")
+        
+        in_hair_main = kwargs.get("🔗 髮型主色連線 (in_hair_main)")
+        in_hair_sub = kwargs.get("🔗 髮型副色連線 (in_hair_sub)")
+        in_tops = kwargs.get("🔗 上著顏色連線 (in_tops)")
+        in_bottoms = kwargs.get("🔗 下著顏色連線 (in_bottoms)")
+        in_shoes = kwargs.get("🔗 鞋子顏色連線 (in_shoes)")
+        in_accessories = kwargs.get("🔗 飾品顏色連線 (in_accessories)")
+        in_bags = kwargs.get("🔗 包包顏色連線 (in_bags)")
+        in_neckwear = kwargs.get("🔗 頸部顏色連線 (in_neckwear)")
+        in_wrist = kwargs.get("🔗 腕部顏色連線 (in_wrist)")
+
+        # 2. 判斷要使用連線顏色還是下拉選單顏色
         def resolve_color(dropdown, linked):
             if linked is not None and isinstance(linked, str) and linked.strip() != "":
                 return linked
             return dropdown
 
-        c_hair_main = resolve_color(hair_color_main, in_hair_main_color)
-        c_hair_sub = resolve_color(hair_color_sub, in_hair_sub_color)
-        c_tops = resolve_color(tops_color, in_tops_color)
-        c_bottoms = resolve_color(bottoms_color, in_bottoms_color)
-        c_shoes = resolve_color(shoes_color, in_shoes_color)
-        c_acc = resolve_color(accessories_color, in_accessories_color)
-        c_bags = resolve_color(bags_color, in_bags_color)
-        c_neck = resolve_color(neckwear_color, in_neckwear_color)
-        c_wrist = resolve_color(wrist_color, in_wrist_color)
+        c_hair_main = resolve_color(hair_color_main, in_hair_main)
+        c_hair_sub = resolve_color(hair_color_sub, in_hair_sub)
+        c_tops = resolve_color(tops_color, in_tops)
+        c_bottoms = resolve_color(bottoms_color, in_bottoms)
+        c_shoes = resolve_color(shoes_color, in_shoes)
+        c_acc = resolve_color(accessories_color, in_accessories)
+        c_bags = resolve_color(bags_color, in_bags)
+        c_neck = resolve_color(neckwear_color, in_neckwear)
+        c_wrist = resolve_color(wrist_color, in_wrist)
 
+        # 3. 組合 Prompt 的邏輯
         def format_part(item, color, prefix):
             if item == "無" or "(找不到" in item: return ""
             if color == "無": return f"{prefix}{item}"
