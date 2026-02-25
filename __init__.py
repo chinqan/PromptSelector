@@ -53,7 +53,7 @@ class MasterOutfitSelector:
         
         return {
             "required": {
-                "📝 基礎咒語 (base_prompt)": ("STRING", {"multiline": True, "default": "1girl, masterpiece, best quality"}),
+                "📝 基礎咒語 (base_prompt)": ("STRING", {"multiline": True, "default": "以圖1為基礎影像,保留其光照、環境及背景。維持圖像1中人物動作,大小比例保持一致性,完美的邊緣細節和透明度,確保高品質、細節清晰,達到4K解析度更變人物身上的著裝"}),
                 
                 # 在標題加上 Emoji 與清楚的中英文對照
                 "💇‍♀️ 髮型 (hair)": (load_items("hair.txt"), ),
@@ -170,7 +170,7 @@ class MasterOutfitSelector:
         p_hair = ""
         if hair != "無" and "(找不到" not in hair:
             if c_hair_main != "無" and c_hair_sub != "無":
-                p_hair = f"留著主色{c_hair_main}與副色{c_hair_sub}的{hair}"
+                p_hair = f"留著主色{c_hair_main}與副色{c_hair_sub}相間的{hair}"
             elif c_hair_main != "無":
                 p_hair = f"留著{c_hair_main}的{hair}"
             else:
