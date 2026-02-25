@@ -21,7 +21,7 @@ class TextModeSwitch:
     CATEGORY = "MyCustomNodes"
 
     def switch_logic(self, mode, prompt1, log1, prompt2, log2):
-        if mode == "模式":
+        if mode == "手動調整":
             # 模式 A：將 A1, A2 導向輸出
             return (prompt1, log1)
         else:
