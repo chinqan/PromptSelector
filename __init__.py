@@ -1,4 +1,5 @@
 import os
+from .textmodestwith import TextModeSwitch
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -172,7 +173,7 @@ class MasterOutfitSelector:
         if hair != "無" and "(找不到" not in hair:
             if c_hair_main != "無" and c_hair_sub != "無":
                 p_hair = f"留著主色{c_hair_main}與副色{c_hair_sub}相間的{hair}"
-                o_hair = f"{c_hair_main}|{c_hair_sub}的{hair},"
+                o_hair = f"{c_hair_main}|{c_hair_sub}的{hair}"
             elif c_hair_main != "無":
                 p_hair = f"留著{c_hair_main}的{hair}"
                 o_hair = f"{c_hair_main}的{hair},"
@@ -206,5 +207,18 @@ class MasterOutfitSelector:
 
 NODE_CLASS_MAPPINGS["MasterOutfitSelector"] = MasterOutfitSelector
 NODE_DISPLAY_NAME_MAPPINGS["MasterOutfitSelector"] = "👑 角色服裝總控中心 (Master Outfit)"
+
+
+# 節點註冊對照表
+NODE_CLASS_MAPPINGS = {
+    "MasterOutfitSelector": MasterOutfitSelector,
+    "TextModeSwitch": TextModeSwitch
+}
+
+# 節點在選單中顯示的名稱
+NODE_DISPLAY_NAME_MAPPINGS = {
+    "MasterOutfitSelector":"👑 角色服裝總控中心 (Master Outfit)",
+    "TextModeSwitch": "Dual Text Switch (A/B)"
+}
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
