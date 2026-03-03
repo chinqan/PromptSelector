@@ -100,6 +100,7 @@ class MasterOutfitSelector:
     RETURN_NAMES = (
         "髮型 Prompt", "上著 Prompt", "下著 Prompt", "鞋子 Prompt", 
         "飾品 Prompt", "包包 Prompt", "頸部 Prompt", "腕部 Prompt", 
+        "Debug Prompt",
         "🌟 最終總組合 Prompt"
     )
     FUNCTION = "build_prompt"
@@ -203,7 +204,12 @@ class MasterOutfitSelector:
         
         final_prompt = ", ".join(all_parts)
         
-        return (o_hair, o_tops, o_bottoms, o_shoes, o_acc, o_bags, o_neck, o_wrist, final_prompt)
+        debug_parts = ""
+        for o in [o_hair, o_tops, o_bottoms, o_shoes, o_acc, o_bags, o_neck, o_wrist]:
+            if p:
+                debug_parts.append(o)
+        
+        return (o_hair, o_tops, o_bottoms, o_shoes, o_acc, o_bags, o_neck, o_wrist, debug_parts, final_prompt)
 
 NODE_CLASS_MAPPINGS["MasterOutfitSelector"] = MasterOutfitSelector
 NODE_DISPLAY_NAME_MAPPINGS["MasterOutfitSelector"] = "👑 角色服裝總控中心 (Master Outfit)"
