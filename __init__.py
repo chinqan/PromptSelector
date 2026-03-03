@@ -96,7 +96,7 @@ class MasterOutfitSelector:
             }
         }
     
-    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_TYPES = ("STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = (
         "髮型 Prompt", "上著 Prompt", "下著 Prompt", "鞋子 Prompt", 
         "飾品 Prompt", "包包 Prompt", "頸部 Prompt", "腕部 Prompt", 
