@@ -206,7 +206,7 @@ class MasterOutfitSelector:
         
         debug_parts = ""
         for o in [o_hair, o_tops, o_bottoms, o_shoes, o_acc, o_bags, o_neck, o_wrist]:
-            if p:
+            if o:
                 debug_parts.append(o)
         
         return (o_hair, o_tops, o_bottoms, o_shoes, o_acc, o_bags, o_neck, o_wrist, debug_parts, final_prompt)
