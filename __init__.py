@@ -204,10 +204,7 @@ class MasterOutfitSelector:
         
         final_prompt = ", ".join(all_parts)
         
-        debug_parts = ""
-        for o in [o_hair, o_tops, o_bottoms, o_shoes, o_acc, o_bags, o_neck, o_wrist]:
-            if o:
-                debug_parts = debug_parts + o
+        debug_parts = o_hair + o_tops + o_bottoms + o_shoes + o_acc + o_bags + o_neck + o_wrist
         
         return (o_hair, o_tops, o_bottoms, o_shoes, o_acc, o_bags, o_neck, o_wrist, debug_parts, final_prompt)
 
