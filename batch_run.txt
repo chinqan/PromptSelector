@@ -1,0 +1,42 @@
+#!/bin/bash
+
+# --- 參數設定 ---
+# 如果執行時沒給參數 (例如 ./run.sh)，預設會使用 GPU 0
+GPU_ID=${1:-0}
+
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate comfyui
+
+# 砍掉舊進程 (建議精確一點，避免誤殺其他使用 main.py 的程式)
+pkill -9 -f "python main.py" || true
+
+echo "--- Updating PromptSelector ---"
+cd /home/opo_admin/ComfyUI/custom_nodes/PromptSelector/
+git pull
+cd /home/opo_admin/ComfyUI/
+
+echo "--- Starting ComfyUI on H200 (Using GPU: $GPU_ID) ---"
+
+# 這裡使用 CUDA_VISIBLE_DEVICES 確保 PyTorch 只抓取該核心
+# 並保留你要求的 --cuda-device 與 --fast 參數
+CUDA_VISIBLE_DEVICES=$GPU_ID python main.py \
+    --listen 0.0.0.0 \
+    --highvram \
+    --fast \
+    --cuda-device $GPU_ID
+
+
+修改重點說明：
+GPU_ID=${1:-0}:
+
+$1 代表你輸入的第一個參數。
+
+:-0 的意思是：如果你沒傳參數，變數就會自動設定為 0。
+
+CUDA_VISIBLE_DEVICES=$GPU_ID:
+
+這是深度學習最常用的方式。它會告訴程式「你的世界裡只有這張顯卡」，能有效避免 ComfyUI 誤佔用其他顯卡的顯存。
+
+動態帶入參數:
+
+在 python main.py 後方直接加上了 --fast 以及 --cuda-device $GPU_ID。    
