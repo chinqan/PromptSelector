@@ -308,7 +308,11 @@ class myImageSave:
 
         pnginfo = self._build_pnginfo(prompt_text, extra_pnginfo)
 
+        # ComfyUI 標準格式：list of dict
+        ui_images = []
         saved_paths = []
+        resolutions = []
+
         for img_tensor in images:
             # ③ 流水編號
             idx = self._next_index(output_dir, safe_prefix)
@@ -319,6 +323,7 @@ class myImageSave:
             #    ComfyUI image shape: [H, W, C], float32, 0-1
             np_img = (img_tensor.cpu().numpy() * 255).clip(0, 255).astype(np.uint8)
             pil_img = Image.fromarray(np_img)
+            width, height = pil_img.size
 
             # ⑤ 存檔
             save_kwargs = {}
@@ -327,14 +332,31 @@ class myImageSave:
             pil_img.save(filepath, format="PNG", **save_kwargs)
 
             saved_paths.append(filepath)
-            print(f"[myImageSave] 已儲存：{filepath}")
+            resolutions.append(f"{width} × {height}")
+            # ComfyUI 預覽所需的標準格式
+            ui_images.append({
+                "filename": filename,
+                "subfolder": "",      # 相對於 output 目錄的子目錄
+                "type": "output",
+                "width": width,
+                "height": height,
+            })
+            print(f"[myImageSave] 已儲存：{filepath}  ({width}×{height})")
 
         result_str = "\n".join(saved_paths)
-        return {"ui": {"images": saved_paths}, "result": (result_str,)}
+        return {
+            "ui": {
+                "images": ui_images,
+                "resolutions": resolutions,   # 供前端 JS 讀取
+            },
+            "result": (result_str,),
+        }
 
 
 NODE_CLASS_MAPPINGS["myImageSave"] = myImageSave
 NODE_DISPLAY_NAME_MAPPINGS["myImageSave"] = "💾 My Image Save (myImageSave)"
 
 
-__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
+WEB_DIRECTORY = os.path.join(current_dir, "web")
+
+__all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS', 'WEB_DIRECTORY']
