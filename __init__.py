@@ -1,4 +1,10 @@
 import os
+import re
+import json
+import struct
+import zlib
+import numpy as np
+from PIL import Image
 from .textmodeswitch import TextModeSwitch
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -215,6 +221,120 @@ NODE_DISPLAY_NAME_MAPPINGS["MasterOutfitSelector"] = "👑 角色服裝總控中
 # 節點註冊對照表
 NODE_CLASS_MAPPINGS["TextModeSwitch"] =  TextModeSwitch
 NODE_DISPLAY_NAME_MAPPINGS["TextModeSwitch"] =  "Dual Text Switch (A/B)"
+
+
+# ==========================================
+# myImageSave - 儲存圖片並寫入 Prompt Metadata
+# ==========================================
+class myImageSave:
+    """
+    將 ComfyUI image tensor 儲存為 PNG 至 ComfyUI/output 資料夾，
+    並將 prompt 字串寫入 PNG 的 tEXt metadata（Comment 欄位）。
+    支援自訂前綴與自動流水編號。
+    """
+
+    @classmethod
+    def INPUT_TYPES(cls):
+        return {
+            "required": {
+                "images":          ("IMAGE",),
+                "filename_prefix": ("STRING", {"default": "MyOutput", "multiline": False}),
+            },
+            "optional": {
+                "prompt_text":     ("STRING", {"default": "", "multiline": True, "forceInput": True}),
+            },
+            "hidden": {
+                "prompt":          "PROMPT",
+                "extra_pnginfo":   "EXTRA_PNGINFO",
+            },
+        }
+
+    RETURN_TYPES = ("STRING",)
+    RETURN_NAMES = ("saved_path",)
+    OUTPUT_NODE = True          # 告知 ComfyUI 這是輸出節點
+    FUNCTION = "save_images"
+    CATEGORY = "MyCustomNodes/IO"
+
+    # ------------------------------------------------------------------
+    # 找到下一個可用的流水編號：prefix_0001.png, prefix_0002.png …
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _next_index(output_dir: str, prefix: str) -> int:
+        max_idx = 0
+        pattern = re.compile(
+            r"^" + re.escape(prefix) + r"_(\d+)\.png$", re.IGNORECASE
+        )
+        if os.path.isdir(output_dir):
+            for fname in os.listdir(output_dir):
+                m = pattern.match(fname)
+                if m:
+                    max_idx = max(max_idx, int(m.group(1)))
+        return max_idx + 1
+
+    # ------------------------------------------------------------------
+    # 把 prompt 字串寫入 PNG tEXt chunk (keyword = "Comment")
+    # PngInfo 在某些 ComfyUI 環境中已由 PIL 提供，直接使用即可。
+    # ------------------------------------------------------------------
+    @staticmethod
+    def _build_pnginfo(prompt_text: str, extra_pnginfo: dict | None) -> "Image.PngImagePlugin.PngInfo | None":
+        try:
+            from PIL import PngImagePlugin
+            pnginfo = PngImagePlugin.PngInfo()
+            if prompt_text:
+                pnginfo.add_text("Comment", prompt_text)
+            # 若 ComfyUI 傳入 workflow / extra 資訊也一起寫入
+            if extra_pnginfo:
+                for k, v in extra_pnginfo.items():
+                    pnginfo.add_text(k, json.dumps(v, ensure_ascii=False))
+            return pnginfo
+        except Exception:
+            return None
+
+    # ------------------------------------------------------------------
+    # 主要執行函式
+    # ------------------------------------------------------------------
+    def save_images(self, images, filename_prefix="MyOutput",
+                    prompt_text="", prompt=None, extra_pnginfo=None):
+
+        # ① 找到 ComfyUI output 目錄（從此檔案向上找）
+        comfy_root = os.path.abspath(
+            os.path.join(current_dir, "..", "..")   # custom_node/PromptSelector -> custom_nodes -> ComfyUI root
+        )
+        output_dir = os.path.join(comfy_root, "output")
+        os.makedirs(output_dir, exist_ok=True)
+
+        # ② 整理前綴（移除非法字元）
+        safe_prefix = re.sub(r'[\\/*?:"<>|]', "_", filename_prefix).strip() or "MyOutput"
+
+        pnginfo = self._build_pnginfo(prompt_text, extra_pnginfo)
+
+        saved_paths = []
+        for img_tensor in images:
+            # ③ 流水編號
+            idx = self._next_index(output_dir, safe_prefix)
+            filename = f"{safe_prefix}_{idx:04d}.png"
+            filepath = os.path.join(output_dir, filename)
+
+            # ④ tensor → numpy → PIL Image
+            #    ComfyUI image shape: [H, W, C], float32, 0-1
+            np_img = (img_tensor.cpu().numpy() * 255).clip(0, 255).astype(np.uint8)
+            pil_img = Image.fromarray(np_img)
+
+            # ⑤ 存檔
+            save_kwargs = {}
+            if pnginfo is not None:
+                save_kwargs["pnginfo"] = pnginfo
+            pil_img.save(filepath, format="PNG", **save_kwargs)
+
+            saved_paths.append(filepath)
+            print(f"[myImageSave] 已儲存：{filepath}")
+
+        result_str = "\n".join(saved_paths)
+        return {"ui": {"images": saved_paths}, "result": (result_str,)}
+
+
+NODE_CLASS_MAPPINGS["myImageSave"] = myImageSave
+NODE_DISPLAY_NAME_MAPPINGS["myImageSave"] = "💾 My Image Save (myImageSave)"
 
 
 __all__ = ['NODE_CLASS_MAPPINGS', 'NODE_DISPLAY_NAME_MAPPINGS']
